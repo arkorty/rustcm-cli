@@ -5,85 +5,206 @@
 // Copyright (C) 2023 Arkaprabha Chakraborty
 
 use orion::{aead, kdf};
-use passterm;
+use passterm::read_password;
 use std::env::args;
 use std::fs::read_to_string;
 use std::fs::File;
 use std::io::{stdout, Read, Write};
+use std::process::exit;
 
 const PROGRAM_NAME: &str = "rustcm-cli";
 const PROGRAM_VERSION: &str = "0.1.0-alpha";
 
 pub fn get_password(prompt: &str) -> String {
     print!("{}", prompt);
-    stdout().flush().unwrap();
-    let password: String = passterm::read_password().unwrap();
+    match stdout().flush() {
+        Ok(_) => (),
+        Err(_) => {
+            eprintln!("Error: Could not flush stdout");
+            exit(0);
+        }
+    };
+
+    let password: String = match read_password() {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not read the password");
+            exit(0)
+        }
+    };
     println!();
+
     password
 }
 
 pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> {
     let plaintext = plaintext.into_bytes();
-    let ciphertext: Vec<u8> =
-        aead::seal(&secret_key, &plaintext).expect("Error: Could not encrypt the data");
+    let ciphertext: Vec<u8> = match aead::seal(&secret_key, &plaintext) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not encrypt the data");
+            exit(0);
+        }
+    };
 
     ciphertext
 }
 
-pub fn get_secret_key(presalt: [u8; 32], password: String) -> orion::kdf::SecretKey {
-    let password = kdf::Password::from_slice(password.as_bytes()).unwrap();
-    let salt = kdf::Salt::from_slice(&presalt).unwrap();
-    let secret_key =
-        kdf::derive_key(&password, &salt, 3, 8, 32).expect("Error: Could not create secret key");
+pub fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::SecretKey {
+    let password = match kdf::Password::from_slice(password.as_bytes()) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not generate the password");
+            exit(0)
+        }
+    };
+    let salt = match kdf::Salt::from_slice(&salt_bytes) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not generate the salt");
+            exit(0)
+        }
+    };
+    let secret_key = match kdf::derive_key(&password, &salt, 3, 8, 32) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not generate the secret key");
+            exit(0)
+        }
+    };
 
     secret_key
 }
 
-pub fn get_presalt() -> [u8; 32] {
-    let mut presalt = [0u8; 32];
-    orion::util::secure_rand_bytes(&mut presalt).expect("Error: Could not get presalt");
+pub fn get_salt_bytes() -> [u8; 32] {
+    let mut salt_bytes = [0u8; 32];
+    match orion::util::secure_rand_bytes(&mut salt_bytes) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not generate the salt");
+            exit(0)
+        }
+    };
 
-    presalt
+    salt_bytes
 }
 
-pub fn get_salt(presalt: [u8; 32]) -> orion::kdf::Salt {
-    let salt = kdf::Salt::from_slice(&presalt).expect("Error: Could not create salt");
+pub fn get_salt(salt_bytes: [u8; 32]) -> orion::kdf::Salt {
+    let salt = match kdf::Salt::from_slice(&salt_bytes) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not generate the salt");
+            exit(0)
+        }
+    };
 
     salt
 }
 
 pub fn write_plain(path: String, plaintext: String) {
-    let mut file = File::create(path).expect("Error: Could not create the file");
-    file.write(&plaintext.into_bytes())
-        .expect("Error: Could not write_cipher plaintext to the file");
-    file.flush().unwrap();
+    let mut file = match File::create(path) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not create the file");
+            exit(0);
+        }
+    };
+
+    match file.write(&plaintext.into_bytes()) {
+        Ok(_) => (),
+        Err(_) => {
+            eprintln!("Error: Could not write the data to the file");
+            exit(0);
+        }
+    };
+
+    match file.flush() {
+        Ok(_) => (),
+        Err(_) => {
+            eprintln!("Error: Could not flush the file");
+            exit(0);
+        }
+    };
 }
 
-pub fn write_cipher(path: String, presalt: [u8; 32], ciphertext: Vec<u8>) {
-    let mut file = File::create(path).expect("Error: Could not create the file");
-    file.write(&presalt).unwrap();
-    file.write(&ciphertext)
-        .expect("Error: Could not write_cipher presalt to the file");
-    file.flush().unwrap();
+pub fn write_cipher(path: String, salt_bytes: [u8; 32], ciphertext: Vec<u8>) {
+    let mut file = match File::create(path) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not create the file");
+            exit(0);
+        }
+    };
+
+    match file.write(&salt_bytes) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could write the salt_bytes to the file");
+            exit(0);
+        }
+    };
+
+    match file.write(&ciphertext) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not write the ciphertext to the file");
+            exit(0);
+        }
+    };
+
+    match file.flush() {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not flush the file");
+            exit(0);
+        }
+    };
 }
 
 pub fn read_plain(path: String) -> String {
-    read_to_string(path).unwrap()
+    let file_str: String = match read_to_string(path) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not read the file");
+            exit(0);
+        }
+    };
+
+    file_str
 }
 
 pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
-    let mut file = File::open(path).expect("Error: Could not open the file");
-    let metadata = File::metadata(&file).expect("Error: Could not read the metadata off the file");
-    let mut data: Vec<u8> = vec![0u8; metadata.len() as usize];
-    file.read(&mut data)
-        .expect("Error: Could not read from the file");
+    let mut file = match File::open(path) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not open the file");
+            exit(0);
+        }
+    };
 
-    let mut presalt: Vec<u8> = vec![0u8; 32];
-    presalt.clone_from_slice(&data[..32]);
+    let metadata = match File::metadata(&file) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("Error: Could not read the metadata off the file");
+            exit(0);
+        }
+    };
+
+    let mut data: Vec<u8> = vec![0u8; metadata.len() as usize];
+    match file.read(&mut data) {
+        Ok(_) => (),
+        Err(_) => {
+            eprintln!("Error: Could not read the file");
+            exit(0);
+        }
+    };
+
+    let mut salt_bytes: Vec<u8> = vec![0u8; 32];
+    salt_bytes.clone_from_slice(&data[..32]);
     let mut cypher: Vec<u8> = vec![0u8; (metadata.len() - 32) as usize];
     cypher.clone_from_slice(&data[32..]);
 
-    (presalt, cypher)
+    (salt_bytes, cypher)
 }
 
 pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String {
@@ -104,11 +225,14 @@ where
     let slice = v.as_slice();
     let array: [T; 32] = match slice.try_into() {
         Ok(bytes) => bytes,
-        Err(_) => panic!(
-            "Error: Expected a Vec of length {} but it was {}",
-            32,
-            v.len()
-        ),
+        Err(_) => {
+            eprintln!(
+                "Error: Expected a vector of length {} but it was {}",
+                32,
+                v.len()
+            );
+            exit(0);
+        }
     };
 
     array
@@ -117,11 +241,18 @@ where
 fn main() {
     let mut args = args();
     while args.next() != None {
-        let arg_str = args.next().unwrap();
-        if arg_str.eq("--help") || arg_str.eq("-h") {
-            println!(
-                "{PROGRAM_NAME} {PROGRAM_VERSION}
-Rust Simple Text Cipher Machine. Encrypts or decrypts files using the ChaCha20-Poly1305 algorithm.
+        let arg_str: String = match args.next() {
+            Some(temp) => temp,
+            None => {
+                exit(0);
+            }
+        };
+
+        match arg_str.as_str() {
+            "--help" | "-h" => {
+                println!(
+                    "{PROGRAM_NAME} {PROGRAM_VERSION}
+Rust Simple Text Cipher Machine.
 
 USAGE:
     rustcm-cli [COMMAND]
@@ -138,36 +269,77 @@ COMMAND:
 
     -d, --decrypt <input-path> <output-path>
         Runs the program in decryption mode."
-            );
-        } else if arg_str.eq("--version") || arg_str.eq("-v") {
-            println!(
-                "rustcm-cli (0.1.0)
+                )
+            }
+
+            "--version" | "-v" => {
+                println!(
+                    "rustcm-cli (0.1.0-alpha)
 Copyright (C) 2023 Arkaprabha Chakraborty
 License GPLv3: GNU GPL version 3
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
 
 Written by Arkaprabha Chakraborty"
-            )
-        }
-        if arg_str.eq("--encrypt") || arg_str.eq("-e") {
-            let password: String = get_password("Password: ");
-            let path: String = args.next().unwrap();
-            let output: String = args.next().unwrap();
-            let plaintext: String = read_plain(path.clone());
-            let presalt = get_presalt();
-            let secret_key = get_secret_key(presalt, password.clone());
-            let ciphertext = encrypt(plaintext, secret_key);
-            write_cipher(output, presalt, ciphertext);
-        } else if arg_str.eq("--decrypt") || arg_str.eq("-d") {
-            let password: String = get_password("Password: ");
-            let path: String = args.next().unwrap();
-            let output: String = args.next().unwrap();
-            let (presalt, ciphertext) = read_cipher(path.clone());
-            let presalt: [u8; 32] = convert_to_array(presalt);
-            let secret_key = get_secret_key(presalt, password);
-            let plaintext = decrypt(ciphertext, secret_key);
-            write_plain(output, plaintext);
-        }
+                );
+            }
+            "encrypt" | "-e" => {
+                let path: String = match args.next() {
+                    Some(temp) => temp,
+                    None => {
+                        eprintln!("Error: Was expecting two arguments but received none");
+                        exit(0);
+                    }
+                };
+
+                let output: String = match args.next() {
+                    Some(temp) => temp,
+                    None => {
+                        eprintln!("Error: Was expecting two arguments but received one");
+                        exit(0);
+                    }
+                };
+
+                let password: String = get_password("Password: ");
+                let plaintext: String = read_plain(path);
+                let salt_bytes = get_salt_bytes();
+                let secret_key = get_secret_key(salt_bytes, password);
+                let ciphertext = encrypt(plaintext, secret_key);
+
+                write_cipher(output, salt_bytes, ciphertext);
+
+                println!("File encrypted successfully")
+            }
+            "--decrypt" | "-d" => {
+                let path: String = match args.next() {
+                    Some(temp) => temp,
+                    None => {
+                        eprintln!("Error: Was expecting two arguments but received none");
+                        exit(0);
+                    }
+                };
+
+                let output: String = match args.next() {
+                    Some(temp) => temp,
+                    None => {
+                        eprintln!("Error: Was expecting two arguments but received one");
+                        exit(0);
+                    }
+                };
+
+                let password: String = get_password("Password: ");
+                let (salt_bytes, ciphertext) = read_cipher(path);
+                let salt_bytes: [u8; 32] = convert_to_array(salt_bytes);
+                let secret_key = get_secret_key(salt_bytes, password);
+                let plaintext = decrypt(ciphertext, secret_key);
+
+                write_plain(output, plaintext);
+
+                println!("File decryption was successful")
+            }
+            _ => {
+                eprintln!("Error: Unrecognized argument");
+            }
+        };
     }
 }
