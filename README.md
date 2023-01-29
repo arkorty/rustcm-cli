@@ -1,4 +1,4 @@
-# Rust Simple Text Cipher Machine
+# Rust Simple Text Cipher Machine / ru·s·t·c·m /
 
 ## About
 
