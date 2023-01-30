@@ -1,6 +1,6 @@
 # Rust Simple Text Cipher Machine / ru·s·t·c·m /
 
-![rustcm-cli.jpg](./blob/rustcm-cli.jpg)
+![rustcm-cli.png](./blob/rustcm-cli.png)
 
 ## About
 
