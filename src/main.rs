@@ -17,21 +17,8 @@ const PROGRAM_VERSION: &str = "0.1.0-alpha";
 
 pub fn get_password(prompt: &str) -> String {
     print!("{}", prompt);
-    match stdout().flush() {
-        Ok(_) => (),
-        Err(_) => {
-            eprintln!("Error: Could not flush date to stdout");
-            exit(0);
-        }
-    };
-
-    let password: String = match read_password() {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not read the password");
-            exit(0)
-        }
-    };
+    into_match(stdout().flush(), "Error: Could not flush date to stdout");
+    let password = into_match(read_password(), "Error: Could not read the password");
     println!();
 
     password
@@ -39,47 +26,31 @@ pub fn get_password(prompt: &str) -> String {
 
 pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> {
     let plaintext = plaintext.into_bytes();
-    let ciphertext: Vec<u8> = match aead::seal(&secret_key, &plaintext) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not encrypt the data");
-            exit(0);
-        }
-    };
-
-    ciphertext
+    into_match(
+        aead::seal(&secret_key, &plaintext),
+        "Error: Could not encrypt the data",
+    )
 }
 
 pub fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::SecretKey {
-    let password = match kdf::Password::from_slice(password.as_bytes()) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not create the password");
-            exit(0)
-        }
-    };
-    let salt = match kdf::Salt::from_slice(&salt_bytes) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not create the salt");
-            exit(0)
-        }
-    };
-    let secret_key = match kdf::derive_key(&password, &salt, 3, 8, 32) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not generate the secret key");
-            exit(0)
-        }
-    };
-
-    secret_key
+    let password = into_match(
+        kdf::Password::from_slice(password.as_bytes()),
+        "Error: Could not create the password",
+    );
+    let salt = into_match(
+        kdf::Salt::from_slice(&salt_bytes),
+        "Error: Could not create the salt",
+    );
+    into_match(
+        kdf::derive_key(&password, &salt, 3, 8, 32),
+        "Error: Could not generate the secret key",
+    )
 }
 
 pub fn get_salt_bytes() -> [u8; 32] {
     let mut salt_bytes = [0u8; 32];
     match orion::util::secure_rand_bytes(&mut salt_bytes) {
-        Ok(temp) => temp,
+        Ok(_) => (),
         Err(_) => {
             eprintln!("Error: Could not generate the random bytes for the salt");
             exit(0)
@@ -89,107 +60,59 @@ pub fn get_salt_bytes() -> [u8; 32] {
     salt_bytes
 }
 
-pub fn get_salt(salt_bytes: [u8; 32]) -> orion::kdf::Salt {
-    let salt = match kdf::Salt::from_slice(&salt_bytes) {
+pub fn into_match<T, E>(res: Result<T, E>, estr: &str) -> T {
+    let ok_val: T = match res {
         Ok(temp) => temp,
         Err(_) => {
-            eprintln!("Error: Could not generate the salt");
+            eprintln!("{estr}");
             exit(0)
         }
     };
+
+    ok_val
+}
+
+pub fn get_salt(salt_bytes: [u8; 32]) -> orion::kdf::Salt {
+    let salt = into_match(
+        kdf::Salt::from_slice(&salt_bytes),
+        "Error: Could not generate the salt",
+    );
 
     salt
 }
 
 pub fn write_plain(path: String, plaintext: String) {
-    let mut file = match File::create(&path) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not create {path}");
-            exit(0);
-        }
-    };
-
-    match file.write(&plaintext.into_bytes()) {
-        Ok(_) => (),
-        Err(_) => {
-            eprintln!("Error: Could not write the data to {path}");
-            exit(0);
-        }
-    };
-
-    match file.flush() {
-        Ok(_) => (),
-        Err(_) => {
-            eprintln!("Error: Could not flush data to {path}");
-            exit(0);
-        }
-    };
+    let mut file = into_match(File::create(&path), "Error: Could not create {path}");
+    into_match(
+        file.write(&plaintext.into_bytes()),
+        "Error: Could not write the data to {path}",
+    );
+    into_match(file.flush(), "Error: Could not flush data to {path}");
 }
 
 pub fn write_cipher(path: String, salt_bytes: [u8; 32], ciphertext: Vec<u8>) {
-    let mut file = match File::create(&path) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not create {path}");
-            exit(0);
-        }
-    };
-
-    match file.write(&salt_bytes) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could write the salt to {path}");
-            exit(0);
-        }
-    };
-
-    match file.write(&ciphertext) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not write the ciphertext to {path}");
-            exit(0);
-        }
-    };
-
-    match file.flush() {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not flush data to {path}");
-            exit(0);
-        }
-    };
+    let mut file = into_match(File::create(&path), "Error: Could not create {path}");
+    into_match(
+        file.write(&salt_bytes),
+        "Error: Could write the salt to {path}",
+    );
+    into_match(
+        file.write(&ciphertext),
+        "Error: Could not write the ciphertext to {path}",
+    );
+    into_match(file.flush(), "Error: Could not flush data to {path}");
 }
 
 pub fn read_plain(path: String) -> String {
-    let file_str: String = match read_to_string(&path) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not read the {path}");
-            exit(0);
-        }
-    };
-
-    file_str
+    into_match(read_to_string(&path), "Error: Could not read the {path}")
 }
 
 pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
-    let mut file = match File::open(&path) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not open {path}");
-            exit(0);
-        }
-    };
-
-    let metadata = match File::metadata(&file) {
-        Ok(temp) => temp,
-        Err(_) => {
-            eprintln!("Error: Could not read the metadata off of {path}");
-            exit(0);
-        }
-    };
-
+    let mut file = into_match(File::open(&path), "Error: Could not open {path}");
+    let metadata = into_match(
+        File::metadata(&file),
+        "Error: Could not read the metadata off of {path}",
+    );
     let mut data: Vec<u8> = vec![0u8; metadata.len() as usize];
     match file.read(&mut data) {
         Ok(_) => (),
@@ -208,17 +131,11 @@ pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
 }
 
 pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String {
-    let plaintext = match aead::open(&secret_key, &ciphertext) {
-        Ok(text) => text,
-        Err(_) => {
-            eprintln!("Error: Failed to decrypt the file, please check the password");
-            exit(0);
-        }
-    };
-
-    let plaintext = String::from_utf8(plaintext).expect("Error: Could not convert to String");
-
-    plaintext
+    let plaintext = into_match(
+        aead::open(&secret_key, &ciphertext),
+        "Error: Failed to decrypt the file, please check the password",
+    );
+    String::from_utf8(plaintext).expect("Error: Could not convert to String")
 }
 
 pub fn to_array(v: Vec<u8>) -> [u8; 32] {
