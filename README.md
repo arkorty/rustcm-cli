@@ -35,6 +35,9 @@ COMMAND:
         Runs the program in decryption mode
 ```
 
+## Example
+![example.png](./blob/example.png)
+
 ## Disclaimer
 
 Do not use this for any high value information. I shall not be held accountable for any damage caused to you by this program. Please use at your own discretion.
