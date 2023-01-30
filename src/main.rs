@@ -26,10 +26,16 @@ pub fn get_password(prompt: &str) -> String {
 
 pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> {
     let plaintext = plaintext.into_bytes();
-    into_match(
-        aead::seal(&secret_key, &plaintext),
-        "Error: Could not encrypt the data",
-    )
+    match aead::seal(&secret_key, &plaintext) {
+        Ok(temp) => {
+            println!("Success: Data was encrypted");
+            temp
+        }
+        Err(_) => {
+            eprintln!("Error: Could not encrypt the data");
+            exit(0);
+        }
+    }
 }
 
 pub fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::SecretKey {
@@ -53,7 +59,7 @@ pub fn get_salt_bytes() -> [u8; 32] {
         Ok(_) => (),
         Err(_) => {
             eprintln!("Error: Could not generate the random bytes for the salt");
-            exit(0)
+            exit(0);
         }
     };
 
@@ -131,10 +137,16 @@ pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
 }
 
 pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String {
-    let plaintext = into_match(
-        aead::open(&secret_key, &ciphertext),
-        "Error: Failed to decrypt the file, please check the password",
-    );
+    let plaintext = match aead::open(&secret_key, &ciphertext) {
+        Ok(temp) => {
+            println!("Success: Data was decrypted");
+            temp
+        }
+        Err(_) => {
+            eprintln!("Error: Failed to decrypt the file, please check the password");
+            exit(0);
+        }
+    };
     String::from_utf8(plaintext).expect("Error: Could not convert to String")
 }
 
@@ -160,13 +172,19 @@ fn main() {
     while args.next() != None {
         let arg_str: String = match args.next() {
             Some(temp) => temp,
-            None => {
-                exit(0);
-            }
+            None => exit(0),
         };
 
         match arg_str.as_str() {
             "--help" | "-h" => {
+                match args.next() {
+                    Some(_) => {
+                        eprintln!("Error: Too many arguments");
+                        exit(0);
+                    }
+                    None => (),
+                };
+
                 println!(
                     "{PROGRAM_NAME} {PROGRAM_VERSION}
 Rust Simple Text Cipher Machine.
@@ -186,10 +204,19 @@ COMMAND:
 
     -d, --decrypt <input-path> <output-path>
         Runs the program in decryption mode."
-                )
+                );
+                exit(0);
             }
 
             "--version" | "-v" => {
+                match args.next() {
+                    Some(_) => {
+                        eprintln!("Error: Too many arguments");
+                        exit(0);
+                    }
+                    None => (),
+                };
+
                 println!(
                     "rustcm-cli (0.1.0-alpha)
 Copyright (C) 2023 Arkaprabha Chakraborty
@@ -199,6 +226,7 @@ There is NO WARRANTY, to the extent permitted by law.
 
 Written by Arkaprabha Chakraborty"
                 );
+                exit(0);
             }
             "--encrypt" | "-e" => {
                 let path: String = match args.next() {
@@ -217,6 +245,14 @@ Written by Arkaprabha Chakraborty"
                     }
                 };
 
+                match args.next() {
+                    Some(_) => {
+                        eprintln!("Error: Too many arguments");
+                        exit(0);
+                    }
+                    None => (),
+                };
+
                 let plaintext: String = read_plain(path);
                 let salt_bytes = get_salt_bytes();
                 let password: String = get_password("Password: ");
@@ -225,7 +261,7 @@ Written by Arkaprabha Chakraborty"
 
                 write_cipher(output, salt_bytes, ciphertext);
 
-                println!("File encrypted successfully")
+                exit(0);
             }
             "--decrypt" | "-d" => {
                 let path: String = match args.next() {
@@ -244,6 +280,14 @@ Written by Arkaprabha Chakraborty"
                     }
                 };
 
+                match args.next() {
+                    Some(_) => {
+                        eprintln!("Error: Too many arguments");
+                        exit(0);
+                    }
+                    None => (),
+                };
+
                 let (salt_bytes, ciphertext) = read_cipher(path);
                 let salt_bytes: [u8; 32] = to_array(salt_bytes);
                 let password: String = get_password("Password: ");
@@ -252,10 +296,11 @@ Written by Arkaprabha Chakraborty"
 
                 write_plain(output, plaintext);
 
-                println!("File decryption was successful")
+                exit(0);
             }
             _ => {
                 eprintln!("Error: Unrecognized argument");
+                exit(0);
             }
         };
     }
