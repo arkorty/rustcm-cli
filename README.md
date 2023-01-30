@@ -1,5 +1,7 @@
 # Rust Simple Text Cipher Machine / ru·s·t·c·m /
 
+![rustcm-cli.jpg](./blob/rustcm-cli.jpg)
+
 ## About
 
 It does precisely what the name indicates, i.e., encryption and decryption of UTF-8 encoded files using the ChaCha20-Poly1305 authenticated streaming cipher algorithm. The program is still in its alpha (incomplete) stage, you might come across a lot of bugs.
