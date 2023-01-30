@@ -1,4 +1,4 @@
-![rustcm-cli.png](./blob/rustcm-cli.png)
+![preview.png](./blob/preview.png)
 
 # Rust Simple Text Cipher Machine / ru·s·t·c·m /
 
