@@ -200,7 +200,7 @@ There is NO WARRANTY, to the extent permitted by law.
 Written by Arkaprabha Chakraborty"
                 );
             }
-            "encrypt" | "-e" => {
+            "--encrypt" | "-e" => {
                 let path: String = match args.next() {
                     Some(temp) => temp,
                     None => {
