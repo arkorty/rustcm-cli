@@ -212,10 +212,10 @@ COMMAND:
         Prints the version information
 
     {}, {} {} {}
-        Runs the program in encryption mode.
+        Runs the program in encryption mode
 
     {}, {} {} {}
-        Runs the program in decryption mode.",
+        Runs the program in decryption mode",
                     PROGRAM_NAME.bright_yellow(),
                     PROGRAM_VERSION.bright_blue(),
                     PROGRAM_NAME.bright_yellow(),
