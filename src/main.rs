@@ -1,9 +1,11 @@
-// Program: rustcm-cli (0.1.0-alpha)
+// Program: rustcm-cli (0.1.1-alpha)
 // License: GNU GPL version 3
 // Author:  Arkaprabha Chakraborty
+// Edited:  31-01-23
 //
 // Copyright (C) 2023 Arkaprabha Chakraborty
 
+use colored::Colorize;
 use orion::{aead, kdf};
 use passterm::read_password;
 use std::env::args;
@@ -13,12 +15,12 @@ use std::io::{stdout, Read, Write};
 use std::process::exit;
 
 const PROGRAM_NAME: &str = "rustcm-cli";
-const PROGRAM_VERSION: &str = "0.1.0-alpha";
+const PROGRAM_VERSION: &str = "0.1.1-alpha";
 
 pub fn get_password(prompt: &str) -> String {
     print!("{}", prompt);
-    into_match(stdout().flush(), "Error: Could not flush date to stdout");
-    let password = into_match(read_password(), "Error: Could not read the password");
+    into_match(stdout().flush(), "{} Could not flush date to stdout");
+    let password = into_match(read_password(), "{} Could not read the password");
     println!();
 
     password
@@ -28,11 +30,11 @@ pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> 
     let plaintext = plaintext.into_bytes();
     match aead::seal(&secret_key, &plaintext) {
         Ok(temp) => {
-            println!("Success: Data was encrypted");
+            println!("{} Data was encrypted", "Success:".bright_green());
             temp
         }
         Err(_) => {
-            eprintln!("Error: Could not encrypt the data");
+            eprintln!("{} Could not encrypt the data", "Error:".bright_red());
             exit(0);
         }
     }
@@ -41,15 +43,15 @@ pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> 
 pub fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::SecretKey {
     let password = into_match(
         kdf::Password::from_slice(password.as_bytes()),
-        "Error: Could not create the password",
+        "{} Could not create the password",
     );
     let salt = into_match(
         kdf::Salt::from_slice(&salt_bytes),
-        "Error: Could not create the salt",
+        "{} Could not create the salt",
     );
     into_match(
         kdf::derive_key(&password, &salt, 3, 8, 32),
-        "Error: Could not generate the secret key",
+        "{} Could not generate the secret key",
     )
 }
 
@@ -58,7 +60,10 @@ pub fn get_salt_bytes() -> [u8; 32] {
     match orion::util::secure_rand_bytes(&mut salt_bytes) {
         Ok(_) => (),
         Err(_) => {
-            eprintln!("Error: Could not generate the random bytes for the salt");
+            eprintln!(
+                "{} Could not generate the random bytes for the salt",
+                "Error:".bright_red()
+            );
             exit(0);
         }
     };
@@ -81,49 +86,46 @@ pub fn into_match<T, E>(res: Result<T, E>, estr: &str) -> T {
 pub fn get_salt(salt_bytes: [u8; 32]) -> orion::kdf::Salt {
     let salt = into_match(
         kdf::Salt::from_slice(&salt_bytes),
-        "Error: Could not generate the salt",
+        "{} Could not generate the salt",
     );
 
     salt
 }
 
 pub fn write_plain(path: String, plaintext: String) {
-    let mut file = into_match(File::create(&path), "Error: Could not create {path}");
+    let mut file = into_match(File::create(&path), "{} Could not create {path}");
     into_match(
         file.write(&plaintext.into_bytes()),
-        "Error: Could not write the data to {path}",
+        "{} Could not write the data to {path}",
     );
-    into_match(file.flush(), "Error: Could not flush data to {path}");
+    into_match(file.flush(), "{} Could not flush data to {path}");
 }
 
 pub fn write_cipher(path: String, salt_bytes: [u8; 32], ciphertext: Vec<u8>) {
-    let mut file = into_match(File::create(&path), "Error: Could not create {path}");
-    into_match(
-        file.write(&salt_bytes),
-        "Error: Could write the salt to {path}",
-    );
+    let mut file = into_match(File::create(&path), "{} Could not create {path}");
+    into_match(file.write(&salt_bytes), "{} Could write the salt to {path}");
     into_match(
         file.write(&ciphertext),
-        "Error: Could not write the ciphertext to {path}",
+        "{} Could not write the ciphertext to {path}",
     );
-    into_match(file.flush(), "Error: Could not flush data to {path}");
+    into_match(file.flush(), "{} Could not flush data to {path}");
 }
 
 pub fn read_plain(path: String) -> String {
-    into_match(read_to_string(&path), "Error: Could not read the {path}")
+    into_match(read_to_string(&path), "{} Could not read the {path}")
 }
 
 pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
-    let mut file = into_match(File::open(&path), "Error: Could not open {path}");
+    let mut file = into_match(File::open(&path), "{} Could not open {path}");
     let metadata = into_match(
         File::metadata(&file),
-        "Error: Could not read the metadata off of {path}",
+        "{} Could not read the metadata off of {path}",
     );
     let mut data: Vec<u8> = vec![0u8; metadata.len() as usize];
     match file.read(&mut data) {
         Ok(_) => (),
         Err(_) => {
-            eprintln!("Error: Could not read {path}");
+            eprintln!("{} Could not read {path}", "Error:".bright_red());
             exit(0);
         }
     };
@@ -139,15 +141,24 @@ pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
 pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String {
     let plaintext = match aead::open(&secret_key, &ciphertext) {
         Ok(temp) => {
-            println!("Success: Data was decrypted");
+            println!("{} Data was decrypted", "Success".bright_green());
             temp
         }
         Err(_) => {
-            eprintln!("Error: Failed to decrypt the file, please check the password");
+            eprintln!(
+                "{} Failed to decrypt the file, please check the password",
+                "Error:".bright_red()
+            );
             exit(0);
         }
     };
-    String::from_utf8(plaintext).expect("Error: Could not convert to String")
+    match String::from_utf8(plaintext) {
+        Ok(temp) => temp,
+        Err(_) => {
+            eprintln!("{} Could not convert to String", "Error:".bright_red());
+            exit(0);
+        }
+    }
 }
 
 pub fn to_array(v: Vec<u8>) -> [u8; 32] {
@@ -156,7 +167,8 @@ pub fn to_array(v: Vec<u8>) -> [u8; 32] {
         Ok(bytes) => bytes,
         Err(_) => {
             eprintln!(
-                "Error: Expected a vector of length {} but it was {}",
+                "{} Expected a vector of length {} but it was {}",
+                "Error:".bright_red(),
                 32,
                 v.len()
             );
@@ -179,31 +191,46 @@ fn main() {
             "--help" | "-h" => {
                 match args.next() {
                     Some(_) => {
-                        eprintln!("Error: Too many arguments");
+                        eprintln!("{} Too many arguments", "Error:".bright_red());
                         exit(0);
                     }
                     None => (),
                 };
 
                 println!(
-                    "{PROGRAM_NAME} {PROGRAM_VERSION}
+                    "{} {}
 Rust Simple Text Cipher Machine.
 
 USAGE:
-    rustcm-cli [COMMAND]
+    {} [COMMAND]
 
 COMMAND:
-    -h, --help
+    {}, {}
         Prints this help message
 
-    -v, --version
+    {}, {}
         Prints the version information
 
-    -e, --encrypt <input-path> <output-path>
+    {}, {} {} {}
         Runs the program in encryption mode.
 
-    -d, --decrypt <input-path> <output-path>
-        Runs the program in decryption mode."
+    {}, {} {} {}
+        Runs the program in decryption mode.",
+                    PROGRAM_NAME.bright_yellow(),
+                    PROGRAM_VERSION.bright_blue(),
+                    PROGRAM_NAME.bright_yellow(),
+                    "-h".bright_cyan(),
+                    "--help".bright_cyan(),
+                    "-v".bright_cyan(),
+                    "--version".bright_cyan(),
+                    "-e".bright_cyan(),
+                    "--encrypt".bright_cyan(),
+                    "<path-to-input>".bright_magenta(),
+                    "<path-to-output>".bright_magenta(),
+                    "-d".bright_cyan(),
+                    "--decrypt".bright_cyan(),
+                    "<path-to-input>".bright_magenta(),
+                    "<path-to-output>".bright_magenta(),
                 );
                 exit(0);
             }
@@ -211,20 +238,23 @@ COMMAND:
             "--version" | "-v" => {
                 match args.next() {
                     Some(_) => {
-                        eprintln!("Error: Too many arguments");
+                        eprintln!("{} Too many arguments", "Error:".bright_red());
                         exit(0);
                     }
                     None => (),
                 };
 
                 println!(
-                    "rustcm-cli (0.1.0-alpha)
+                    "{} ({})
 Copyright (C) 2023 Arkaprabha Chakraborty
 License GPLv3: GNU GPL version 3
 This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.
+There is {}, to the extent permitted by law.
 
-Written by Arkaprabha Chakraborty"
+Written by Arkaprabha Chakraborty",
+                    PROGRAM_NAME.bright_yellow(),
+                    PROGRAM_VERSION.bright_blue(),
+                    "NO WARRANTY".bright_red()
                 );
                 exit(0);
             }
@@ -232,7 +262,10 @@ Written by Arkaprabha Chakraborty"
                 let path: String = match args.next() {
                     Some(temp) => temp,
                     None => {
-                        eprintln!("Error: Was expecting two arguments but received none");
+                        eprintln!(
+                            "{} Was expecting two arguments but received none",
+                            "Error:".bright_red()
+                        );
                         exit(0);
                     }
                 };
@@ -240,14 +273,17 @@ Written by Arkaprabha Chakraborty"
                 let output: String = match args.next() {
                     Some(temp) => temp,
                     None => {
-                        eprintln!("Error: Was expecting two arguments but received one");
+                        eprintln!(
+                            "{} Was expecting two arguments but received one",
+                            "Error:".bright_red()
+                        );
                         exit(0);
                     }
                 };
 
                 match args.next() {
                     Some(_) => {
-                        eprintln!("Error: Too many arguments");
+                        eprintln!("{} Too many arguments", "Error:".bright_red());
                         exit(0);
                     }
                     None => (),
@@ -267,7 +303,10 @@ Written by Arkaprabha Chakraborty"
                 let path: String = match args.next() {
                     Some(temp) => temp,
                     None => {
-                        eprintln!("Error: Was expecting two arguments but received none");
+                        eprintln!(
+                            "{} Was expecting two arguments but received none",
+                            "Error:".bright_red()
+                        );
                         exit(0);
                     }
                 };
@@ -275,14 +314,17 @@ Written by Arkaprabha Chakraborty"
                 let output: String = match args.next() {
                     Some(temp) => temp,
                     None => {
-                        eprintln!("Error: Was expecting two arguments but received one");
+                        eprintln!(
+                            "{} Was expecting two arguments but received one",
+                            "Error:".bright_red()
+                        );
                         exit(0);
                     }
                 };
 
                 match args.next() {
                     Some(_) => {
-                        eprintln!("Error: Too many arguments");
+                        eprintln!("{} Too many arguments", "Error:".bright_red());
                         exit(0);
                     }
                     None => (),
@@ -299,7 +341,7 @@ Written by Arkaprabha Chakraborty"
                 exit(0);
             }
             _ => {
-                eprintln!("Error: Unrecognized argument");
+                eprintln!("{} Unrecognized argument", "Error:".bright_red());
                 exit(0);
             }
         };
