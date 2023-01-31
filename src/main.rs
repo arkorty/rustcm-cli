@@ -141,7 +141,7 @@ pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
 pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String {
     let plaintext = match aead::open(&secret_key, &ciphertext) {
         Ok(temp) => {
-            println!("{} Data was decrypted", "Success".bright_green());
+            println!("{} Data was decrypted", "Success:".bright_green());
             temp
         }
         Err(_) => {
