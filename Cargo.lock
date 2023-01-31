@@ -99,7 +99,7 @@ dependencies = [
 
 [[package]]
 name = "rustcm-cli"
-version = "0.1.0-alpha"
+version = "0.1.1-alpha"
 dependencies = [
  "colored",
  "orion",
