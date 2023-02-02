@@ -38,7 +38,7 @@ COMMAND:
 ```
 
 ## Example
-![example.png](./blob/example.png)
+![screenshot.png](./blob/screenshot.png)
 
 ## Disclaimer
 
