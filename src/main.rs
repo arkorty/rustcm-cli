@@ -35,7 +35,7 @@ pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> 
         }
         Err(_) => {
             eprintln!("{} Could not encrypt the data", "Error:".bright_red());
-            exit(0);
+            exit(1);
         }
     }
 }
@@ -64,7 +64,7 @@ pub fn get_salt_bytes() -> [u8; 32] {
                 "{} Could not generate the random bytes for the salt",
                 "Error:".bright_red()
             );
-            exit(0);
+            exit(1);
         }
     };
 
@@ -76,7 +76,7 @@ pub fn into_match<T, E>(res: Result<T, E>, estr: &str) -> T {
         Ok(temp) => temp,
         Err(_) => {
             eprintln!("{estr}");
-            exit(0)
+            exit(1)
         }
     };
 
@@ -126,7 +126,7 @@ pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
         Ok(_) => (),
         Err(_) => {
             eprintln!("{} Could not read {path}", "Error:".bright_red());
-            exit(0);
+            exit(1);
         }
     };
 
@@ -149,14 +149,14 @@ pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String
                 "{} Failed to decrypt the file, please check the password",
                 "Error:".bright_red()
             );
-            exit(0);
+            exit(1);
         }
     };
     match String::from_utf8(plaintext) {
         Ok(temp) => temp,
         Err(_) => {
             eprintln!("{} Could not convert to String", "Error:".bright_red());
-            exit(0);
+            exit(1);
         }
     }
 }
@@ -172,7 +172,7 @@ pub fn to_array(v: Vec<u8>) -> [u8; 32] {
                 32,
                 v.len()
             );
-            exit(0);
+            exit(1);
         }
     };
 
@@ -192,7 +192,7 @@ fn main() {
                 match args.next() {
                     Some(_) => {
                         eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(0);
+                        exit(1);
                     }
                     None => (),
                 };
@@ -239,7 +239,7 @@ COMMAND:
                 match args.next() {
                     Some(_) => {
                         eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(0);
+                        exit(1);
                     }
                     None => (),
                 };
@@ -266,7 +266,7 @@ Written by Arkaprabha Chakraborty",
                             "{} Was expecting two arguments but received none",
                             "Error:".bright_red()
                         );
-                        exit(0);
+                        exit(1);
                     }
                 };
 
@@ -277,14 +277,14 @@ Written by Arkaprabha Chakraborty",
                             "{} Was expecting two arguments but received one",
                             "Error:".bright_red()
                         );
-                        exit(0);
+                        exit(1);
                     }
                 };
 
                 match args.next() {
                     Some(_) => {
                         eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(0);
+                        exit(1);
                     }
                     None => (),
                 };
@@ -307,7 +307,7 @@ Written by Arkaprabha Chakraborty",
                             "{} Was expecting two arguments but received none",
                             "Error:".bright_red()
                         );
-                        exit(0);
+                        exit(1);
                     }
                 };
 
@@ -318,14 +318,14 @@ Written by Arkaprabha Chakraborty",
                             "{} Was expecting two arguments but received one",
                             "Error:".bright_red()
                         );
-                        exit(0);
+                        exit(1);
                     }
                 };
 
                 match args.next() {
                     Some(_) => {
                         eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(0);
+                        exit(1);
                     }
                     None => (),
                 };
@@ -342,7 +342,7 @@ Written by Arkaprabha Chakraborty",
             }
             _ => {
                 eprintln!("{} Unrecognized argument", "Error:".bright_red());
-                exit(0);
+                exit(1);
             }
         };
     }
