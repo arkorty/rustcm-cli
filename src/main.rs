@@ -9,8 +9,7 @@ use colored::Colorize;
 use orion::{aead, kdf};
 use passterm::read_password;
 use std::env::args;
-use std::fs::read_to_string;
-use std::fs::File;
+use std::fs::{read_to_string, File};
 use std::io::{stdout, Read, Write};
 use std::process::exit;
 
