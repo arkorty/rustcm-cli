@@ -17,8 +17,8 @@ It does precisely what the name indicates, i.e., encryption and decryption of UT
 ## Usage
 
 ```
-rustcm-cli 0.1.0-alpha
-Rust Simple Text Cipher Machine
+rustcm-cli 0.1.1-alpha
+Rust Simple Text Cipher Machine.
 
 USAGE:
     rustcm-cli [COMMAND]
@@ -30,10 +30,10 @@ COMMAND:
     -v, --version
         Prints the version information
 
-    -e, --encrypt <input-path> <output-path>
+    -e, --encrypt <path-to-input> <path-to-output>
         Runs the program in encryption mode
 
-    -d, --decrypt <input-path> <output-path>
+    -d, --decrypt <path-to-input> <path-to-output>
         Runs the program in decryption mode
 ```
 
