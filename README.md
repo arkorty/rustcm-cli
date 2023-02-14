@@ -1,4 +1,4 @@
-![rustcm-cli.png](./blob/rustcm-cli.png)
+![rustcm-cli.png](blob/rustcm-cli.png)
 
 # Rust Simple Text Cipher Machine / ru·s·t·c·m /
 
@@ -8,11 +8,11 @@ It does precisely what the name indicates, i.e., encryption and decryption of UT
 
 ## Build
 
-* Install [Cargo](https://github.com/rust-lang/cargo)
+- Install [Cargo](https://github.com/rust-lang/cargo)
 
-* `cargo build --release` to build
+- `cargo build --release` to build
 
-* The program binary will be in the `./target/release` directory
+- The program binary will be in the `./target/release` directory
 
 ## Usage
 
@@ -38,7 +38,8 @@ COMMAND:
 ```
 
 ## Example
-![screenshot.png](./blob/screenshot.png)
+
+![screenshot.png](blob/screenshot.png)
 
 ## Disclaimer
 
@@ -50,4 +51,4 @@ Distributed under the GPLv3 License. See `LICENSE` for more information.
 
 ## Contributors
 
-* [Arkaprabha Chakraborty](https://github.com/arkorty)
+- [Arkaprabha Chakraborty](https://github.com/arkorty)
