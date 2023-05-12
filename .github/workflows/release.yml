@@ -1,4 +1,4 @@
-# .github/workflows/release.yml
+name: Make Binaries
 
 on:
   release:
