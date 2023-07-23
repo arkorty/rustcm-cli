@@ -1,4 +1,4 @@
-// Program: rustcm-cli (0.1.1-alpha)
+// Program: rustcm-cli (0.1.2-alpha)
 // License: GNU GPL version 3
 // Author:  Arkaprabha Chakraborty
 // Edited:  31-01-23
@@ -7,19 +7,21 @@
 
 use colored::Colorize;
 use orion::{aead, kdf};
-use passterm::read_password;
+use passterm::prompt_password_tty;
 use std::env::args;
 use std::fs::{read_to_string, File};
 use std::io::{stdout, Read, Write};
 use std::process::exit;
 
 const PROGRAM_NAME: &str = "rustcm-cli";
-const PROGRAM_VERSION: &str = "0.1.1-alpha";
+const PROGRAM_VERSION: &str = "0.1.2-alpha";
 
 pub fn get_password(prompt: &str) -> String {
-    print!("{}", prompt);
     into_match(stdout().flush(), "{} Could not flush date to stdout");
-    let password = into_match(read_password(), "{} Could not read the password");
+    let password = into_match(
+        prompt_password_tty(Some(prompt)),
+        "{} Could not read the password",
+    );
     println!();
 
     password
