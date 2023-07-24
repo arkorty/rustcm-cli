@@ -1,7 +1,6 @@
 // Program: rustcm-cli (0.1.2-alpha)
 // License: GNU GPL version 3
 // Author:  Arkaprabha Chakraborty
-// Edited:  31-01-23
 //
 // Copyright (C) 2023 Arkaprabha Chakraborty
 
