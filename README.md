@@ -41,10 +41,6 @@ COMMAND:
 
 ![screenshot.png](blob/screenshot.png)
 
-## Disclaimer
-
-Do not use this for any high value information. I shall not be held accountable for any damage caused to you by this program. Please use at your own discretion.
-
 ## License
 
 Distributed under the GPLv3 License. See `LICENSE` for more information.
