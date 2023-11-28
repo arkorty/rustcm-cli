@@ -17,7 +17,7 @@ It does precisely what the name indicates, i.e., encryption and decryption of UT
 ## Usage
 
 ```
-rustcm-cli 0.1.2-alpha
+rustcm-cli 0.1.3-alpha
 Rust Simple Text Cipher Machine.
 
 USAGE:
