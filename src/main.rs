@@ -1,4 +1,4 @@
-// Program: rustcm-cli (0.1.2-alpha)
+// Program: rustcm-cli (0.1.3-alpha)
 // License: GNU GPL version 3
 // Author:  Arkaprabha Chakraborty
 //
@@ -13,15 +13,18 @@ use std::io::{stdout, Read, Write};
 use std::process::exit;
 
 const PROGRAM_NAME: &str = "rustcm-cli";
-const PROGRAM_VERSION: &str = "0.1.2-alpha";
+const PROGRAM_VERSION: &str = "0.1.3-alpha";
 
 pub fn get_password(prompt: &str) -> String {
-    into_match(stdout().flush(), "{} Could not flush date to stdout");
+    into_match(
+        stdout().flush(),
+        format!("{} Could not flush date to stdout", "Error".bright_red()).as_str(),
+    );
     let password = into_match(
         prompt_password_tty(Some(prompt)),
-        "{} Could not read the password",
+        format!("{} Could not read the password", "Error".bright_red()).as_str(),
     );
-    println!();
+    //println!();
 
     password
 }
@@ -43,15 +46,19 @@ pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> 
 pub fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::SecretKey {
     let password = into_match(
         kdf::Password::from_slice(password.as_bytes()),
-        "{} Could not create the password",
+        format!("{} Could not use the password", "Error:".bright_red()).as_str(),
     );
     let salt = into_match(
         kdf::Salt::from_slice(&salt_bytes),
-        "{} Could not create the salt",
+        format!("{} Could not create the salt", "Error:".bright_red()).as_str(),
     );
     into_match(
         kdf::derive_key(&password, &salt, 3, 8, 32),
-        "{} Could not generate the secret key",
+        format!(
+            "{} Could not generate the secret key",
+            "Error:".bright_red()
+        )
+        .as_str(),
     )
 }
 
@@ -86,40 +93,73 @@ pub fn into_match<T, E>(res: Result<T, E>, estr: &str) -> T {
 pub fn get_salt(salt_bytes: [u8; 32]) -> orion::kdf::Salt {
     let salt = into_match(
         kdf::Salt::from_slice(&salt_bytes),
-        "{} Could not generate the salt",
+        format!("{} Could not generate the salt", "Error:".bright_red()).as_str(),
     );
 
     salt
 }
 
 pub fn write_plain(path: String, plaintext: String) {
-    let mut file = into_match(File::create(&path), "{} Could not create {path}");
+    let mut file = into_match(
+        File::create(&path),
+        format!("{} Could not create {path}", "Error".bright_red()).as_str(),
+    );
     into_match(
         file.write(&plaintext.into_bytes()),
-        "{} Could not write the data to {path}",
+        format!(
+            "{} Could not write the data to {path}",
+            "Error".bright_red()
+        )
+        .as_str(),
     );
-    into_match(file.flush(), "{} Could not flush data to {path}");
+    into_match(
+        file.flush(),
+        format!("{} Could not flush data to {path}", "Error".bright_red()).as_str(),
+    );
 }
 
 pub fn write_cipher(path: String, salt_bytes: [u8; 32], ciphertext: Vec<u8>) {
-    let mut file = into_match(File::create(&path), "{} Could not create {path}");
-    into_match(file.write(&salt_bytes), "{} Could write the salt to {path}");
+    let mut file = into_match(
+        File::create(&path),
+        format!("{} Could not create {path}", "Error".bright_red()).as_str(),
+    );
+    into_match(
+        file.write(&salt_bytes),
+        format!("{} Could write the salt to {path}", "Error".bright_red()).as_str(),
+    );
     into_match(
         file.write(&ciphertext),
-        "{} Could not write the ciphertext to {path}",
+        format!(
+            "{} Could not write the ciphertext to {path}",
+            "Error:".bright_red()
+        )
+        .as_str(),
     );
-    into_match(file.flush(), "{} Could not flush data to {path}");
+    into_match(
+        file.flush(),
+        format!("{} Could not flush data to {path}", "Error:".bright_red()).as_str(),
+    );
 }
 
 pub fn read_plain(path: String) -> String {
-    into_match(read_to_string(&path), "{} Could not read the {path}")
+    into_match(
+        read_to_string(&path),
+        format!("{} Could not read {path}", "Error:".bright_red()).as_str(),
+    )
 }
 
 pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
-    let mut file = into_match(File::open(&path), "{} Could not open {path}");
+    let mut file = into_match(
+        File::open(&path),
+        format!("{} Could not open {path}", "Error:".bright_red()).as_str(),
+    );
     let metadata = into_match(
         File::metadata(&file),
-        "{} Could not read the metadata off of {path}",
+        format!(
+            "{} Could not read the metadata off of {path}",
+            "Error:".bright_red()
+        )
+        .as_str(),
     );
     let mut data: Vec<u8> = vec![0u8; metadata.len() as usize];
     match file.read(&mut data) {
