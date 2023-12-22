@@ -221,7 +221,8 @@ pub fn to_array(v: Vec<u8>) -> [u8; 32] {
 
 fn main() {
     let mut args = args();
-    while args.next() != None {
+    #[allow(clippy::never_loop)]
+    while args.next().is_some() {
         let arg_str: String = match args.next() {
             Some(temp) => temp,
             None => exit(0),
@@ -229,12 +230,9 @@ fn main() {
 
         match arg_str.as_str() {
             "--help" | "-h" => {
-                match args.next() {
-                    Some(_) => {
-                        eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(1);
-                    }
-                    None => (),
+                if args.next().is_some() {
+                    eprintln!("{} Too many arguments", "Error:".bright_red());
+                    exit(1);
                 };
 
                 println!(
@@ -276,12 +274,9 @@ COMMAND:
             }
 
             "--version" | "-v" => {
-                match args.next() {
-                    Some(_) => {
-                        eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(1);
-                    }
-                    None => (),
+                if args.next().is_some() {
+                    eprintln!("{} Too many arguments", "Error:".bright_red());
+                    exit(1);
                 };
 
                 println!(
@@ -321,12 +316,9 @@ Written by Arkaprabha Chakraborty",
                     }
                 };
 
-                match args.next() {
-                    Some(_) => {
-                        eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(1);
-                    }
-                    None => (),
+                if args.next().is_some() {
+                    eprintln!("{} Too many arguments", "Error:".bright_red());
+                    exit(1);
                 };
 
                 let plaintext: String = read_plain(path);
@@ -362,12 +354,9 @@ Written by Arkaprabha Chakraborty",
                     }
                 };
 
-                match args.next() {
-                    Some(_) => {
-                        eprintln!("{} Too many arguments", "Error:".bright_red());
-                        exit(1);
-                    }
-                    None => (),
+                if args.next().is_some() {
+                    eprintln!("{} Too many arguments", "Error:".bright_red());
+                    exit(1);
                 };
 
                 let (salt_bytes, ciphertext) = read_cipher(path);
