@@ -15,7 +15,7 @@ use std::process::exit;
 const PROGRAM_NAME: &str = "rustcm-cli";
 const PROGRAM_VERSION: &str = "0.1.3-alpha";
 
-pub fn get_password(prompt: &str) -> String {
+fn get_password(prompt: &str) -> String {
     into_match(
         stdout().flush(),
         format!("{} Could not flush date to stdout", "Error".bright_red()).as_str(),
@@ -29,7 +29,7 @@ pub fn get_password(prompt: &str) -> String {
     password
 }
 
-pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> {
+fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> {
     let plaintext = plaintext.into_bytes();
     match aead::seal(&secret_key, &plaintext) {
         Ok(temp) => {
@@ -43,7 +43,7 @@ pub fn encrypt(plaintext: String, secret_key: orion::kdf::SecretKey) -> Vec<u8> 
     }
 }
 
-pub fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::SecretKey {
+fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::SecretKey {
     let password = into_match(
         kdf::Password::from_slice(password.as_bytes()),
         format!("{} Could not use the password", "Error:".bright_red()).as_str(),
@@ -62,7 +62,7 @@ pub fn get_secret_key(salt_bytes: [u8; 32], password: String) -> orion::kdf::Sec
     )
 }
 
-pub fn get_salt_bytes() -> [u8; 32] {
+fn get_salt_bytes() -> [u8; 32] {
     let mut salt_bytes = [0u8; 32];
     match orion::util::secure_rand_bytes(&mut salt_bytes) {
         Ok(_) => (),
@@ -78,7 +78,7 @@ pub fn get_salt_bytes() -> [u8; 32] {
     salt_bytes
 }
 
-pub fn into_match<T, E>(res: Result<T, E>, estr: &str) -> T {
+fn into_match<T, E>(res: Result<T, E>, estr: &str) -> T {
     let ok_val: T = match res {
         Ok(temp) => temp,
         Err(_) => {
@@ -90,16 +90,7 @@ pub fn into_match<T, E>(res: Result<T, E>, estr: &str) -> T {
     ok_val
 }
 
-pub fn get_salt(salt_bytes: [u8; 32]) -> orion::kdf::Salt {
-    let salt = into_match(
-        kdf::Salt::from_slice(&salt_bytes),
-        format!("{} Could not generate the salt", "Error:".bright_red()).as_str(),
-    );
-
-    salt
-}
-
-pub fn write_plain(path: String, plaintext: String) {
+fn write_plain(path: String, plaintext: String) {
     let mut file = into_match(
         File::create(&path),
         format!("{} Could not create {path}", "Error".bright_red()).as_str(),
@@ -118,7 +109,7 @@ pub fn write_plain(path: String, plaintext: String) {
     );
 }
 
-pub fn write_cipher(path: String, salt_bytes: [u8; 32], ciphertext: Vec<u8>) {
+fn write_cipher(path: String, salt_bytes: [u8; 32], ciphertext: Vec<u8>) {
     let mut file = into_match(
         File::create(&path),
         format!("{} Could not create {path}", "Error".bright_red()).as_str(),
@@ -141,14 +132,14 @@ pub fn write_cipher(path: String, salt_bytes: [u8; 32], ciphertext: Vec<u8>) {
     );
 }
 
-pub fn read_plain(path: String) -> String {
+fn read_plain(path: String) -> String {
     into_match(
         read_to_string(&path),
         format!("{} Could not read {path}", "Error:".bright_red()).as_str(),
     )
 }
 
-pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
+fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
     let mut file = into_match(
         File::open(&path),
         format!("{} Could not open {path}", "Error:".bright_red()).as_str(),
@@ -178,7 +169,7 @@ pub fn read_cipher(path: String) -> (Vec<u8>, Vec<u8>) {
     (salt_bytes, cypher)
 }
 
-pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String {
+fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String {
     let plaintext = match aead::open(&secret_key, &ciphertext) {
         Ok(temp) => {
             println!("{} Data was decrypted", "Success:".bright_green());
@@ -201,7 +192,7 @@ pub fn decrypt(ciphertext: Vec<u8>, secret_key: orion::kdf::SecretKey) -> String
     }
 }
 
-pub fn to_array(v: Vec<u8>) -> [u8; 32] {
+fn to_array(v: Vec<u8>) -> [u8; 32] {
     let slice = v.as_slice();
     let array: [u8; 32] = match slice.try_into() {
         Ok(bytes) => bytes,
