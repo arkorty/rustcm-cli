@@ -3,7 +3,13 @@ name = "rustcm-cli"
 version = "0.1.3-alpha"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "rustcm_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "rustcm-cli"
+path = "src/main.rs"
 
 [dependencies]
 orion = "0.17.5"
