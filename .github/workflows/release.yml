@@ -1,0 +1,74 @@
+name: Rust CI/CD
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --verbose
+
+  release:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+    - name: Install Windows GNU toolchain
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-mingw-w64-x86-64
+    - name: Get version
+      id: get_version
+      run: echo "VERSION=$(grep '^version =' Cargo.toml | cut -d '"' -f2)" >> $GITHUB_OUTPUT
+    - name: Build Release for Linux
+      run: cargo build --release --target x86_64-unknown-linux-gnu
+    - name: Build Release for Windows
+      run: |
+        rustup target add x86_64-pc-windows-gnu
+        cargo build --release --target x86_64-pc-windows-gnu
+    - name: Verify binaries and create release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        linux_binary="./target/x86_64-unknown-linux-gnu/release/rustcm-cli"
+        windows_binary="./target/x86_64-pc-windows-gnu/release/rustcm-cli.exe"
+        
+        if [ ! -f "$linux_binary" ]; then
+          echo "Error: Linux binary not found at $linux_binary"
+          exit 1
+        fi
+        
+        if [ ! -f "$windows_binary" ]; then
+          echo "Error: Windows binary not found at $windows_binary"
+          exit 1
+        fi
+        
+        version="${{ steps.get_version.outputs.VERSION }}"
+        tag_name="v$version"
+        release_name="Release v$version"
+        
+        gh release create "$tag_name" \
+          --title "$release_name" \
+          --notes "Automated release for version $version" \
+          --prerelease \
+          "$linux_binary#rustcm-cli-$version-linux-x86_64" \
+          "$windows_binary#rustcm-cli-$version-windows-x86_64.exe"
