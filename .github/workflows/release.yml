@@ -70,5 +70,5 @@ jobs:
           --title "$release_name" \
           --notes "Automated release for version $version" \
           --prerelease \
-          "$linux_binary#rustcm-cli-$version-linux-x86_64" \
-          "$windows_binary#rustcm-cli-$version-windows-x86_64.exe"
+          "$linux_binary#rustcm-cli-linux-x86_64" \
+          "$windows_binary#rustcm-cli-windows-x86_64.exe"
