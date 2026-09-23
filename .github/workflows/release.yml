@@ -10,14 +10,87 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --verbose
+      - name: Run tests
+        run: cargo test --verbose
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            archive: tar.gz
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            archive: tar.gz
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            archive: tar.gz
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive: zip
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            archive: zip
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            archive: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            archive: tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Install zig (Linux cross builds)
+        if: runner.os == 'Linux'
+        uses: mlugg/setup-zig@v2
+      - name: Install cargo-zigbuild
+        if: runner.os == 'Linux'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-zigbuild
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: cargo zigbuild --release --target ${{ matrix.target }}
+      - name: Build (macOS / Windows)
+        if: runner.os != 'Linux'
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/rscm"
+          test -f "$bin"
+          tar czf "rscm-${{ matrix.target }}.tar.gz" -C "$(dirname "$bin")" rscm
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/rscm.exe"
+          test -f "$bin"
+          cp "$bin" rscm.exe
+          7z a "rscm-${{ matrix.target }}.zip" rscm.exe
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.target }}
+          path: rscm-${{ matrix.target }}.${{ matrix.archive }}
+          if-no-files-found: error
 
   release:
     needs: build
@@ -26,49 +99,29 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v4
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        override: true
-    - name: Install Windows GNU toolchain
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y gcc-mingw-w64-x86-64
-    - name: Get version
-      id: get_version
-      run: echo "VERSION=$(grep '^version =' Cargo.toml | cut -d '"' -f2)" >> $GITHUB_OUTPUT
-    - name: Build Release for Linux
-      run: cargo build --release --target x86_64-unknown-linux-gnu
-    - name: Build Release for Windows
-      run: |
-        rustup target add x86_64-pc-windows-gnu
-        cargo build --release --target x86_64-pc-windows-gnu
-    - name: Verify binaries and create release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        linux_binary="./target/x86_64-unknown-linux-gnu/release/rustcm-cli"
-        windows_binary="./target/x86_64-pc-windows-gnu/release/rustcm-cli.exe"
-        
-        if [ ! -f "$linux_binary" ]; then
-          echo "Error: Linux binary not found at $linux_binary"
-          exit 1
-        fi
-        
-        if [ ! -f "$windows_binary" ]; then
-          echo "Error: Windows binary not found at $windows_binary"
-          exit 1
-        fi
-        
-        version="${{ steps.get_version.outputs.VERSION }}"
-        tag_name="v$version"
-        release_name="Release v$version"
-        
-        gh release create "$tag_name" \
-          --title "$release_name" \
-          --notes "Automated release for version $version" \
-          --prerelease \
-          "$linux_binary#rustcm-cli-linux-x86_64" \
-          "$windows_binary#rustcm-cli-windows-x86_64.exe"
+      - uses: actions/checkout@v4
+      - name: Get version
+        id: get_version
+        run: echo "VERSION=$(grep '^version =' Cargo.toml | cut -d '"' -f2)" >> $GITHUB_OUTPUT
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Create release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="${{ steps.get_version.outputs.VERSION }}"
+          ls -la dist
+
+          assets=()
+          for f in dist/*; do
+            assets+=("$f")
+          done
+
+          gh release create "v$version" \
+            --title "Release v$version" \
+            --notes "Automated release for version $version" \
+            --prerelease \
+            "${assets[@]}"
